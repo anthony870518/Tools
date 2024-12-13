@@ -103,28 +103,4 @@ then
         else
             echo "Unable to recognize where you want to go!"
         fi
-else
-    if [[ $where == "noc" ]]
-    then
-        ssh -i jenkins_id_rsa noc_jenkins@124.108.156.69
-    else
-        if [[ "$where" =~ ^[0-9]+$ ]]; then
-            server_num=$where
-            ssh_connect
-        elif [[ "$where" =~ ^[a-zA-Z]+$ ]]; then
-	    index=1
-	    where="${where^^}"
-            for server in "${server_list[@]}"; do
-                # Check if the element contains "UD"
-                if [[ "$server" == "$where"* ]]; then
-		    server_num=$index
-	  	    ssh_connect
-                    break # Exit the loop after the first match is found
-                fi
-		((index++))
-            done
-        else
-            echo "Unable to recognize where you want to go!"
-        fi
-    fi
 fi
