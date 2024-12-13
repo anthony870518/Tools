@@ -1,0 +1,130 @@
+#!/usr/local/bin/bash
+where=$1
+# Define colors for projects
+declare -A colors
+colors["CROS"]='\033[32m'
+colors["NFS"]='\033[35m'
+colors["SS"]='\033[34m'
+colors["UD"]='\033[33m'
+colors["VT"]='\033[36m'
+NO_COLOR="\033[0m"
+
+# Check if ssh-add has no keys
+if [ "$(ssh-add -l)" = "The agent has no identities." ]; then
+    echo "No SSH keys are loaded in ssh-agent. Adding default key..."
+    # Attempt to add ~/.ssh/id_rsa
+    ssh-add ~/.ssh/id_rsa
+    # Inform the user of the outcome
+    if [ $? -eq 0 ]; then
+        echo "Key added successfully."
+    else
+        echo "Failed to add the key."
+    fi
+else
+    echo "SSH keys are already loaded."
+fi
+
+
+# Load server configurations from a file into an indexed array
+declare -a server_list
+current_project=""
+# Read the configuration file and preserve order
+index=0
+while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^# ]]; then
+        # New project name from comment line
+        current_project=$(echo "$line" | sed 's/# //')
+    elif [[ -z "$line" ]]; then
+        continue  # Skip empty lines
+    else
+        server_list[index]="$current_project $line"
+        ((index++))
+    fi
+done < /usr/local/bin/server_list.conf
+
+# Function to display servers by project
+display_servers_by_project() {
+    local current_color=""
+    local project_name=""
+    echo "================================================"
+    for i in "${!server_list[@]}"; do
+        read -r project server_info <<< "${server_list[i]}"
+        if [[ "$project" != "$project_name" ]]; then
+            printf "$NO_COLOR"
+            # Change project
+            if [[ -n "$project_name" ]]; then
+                echo "================================================"
+            fi
+            project_name="$project"
+            current_color="${colors[$project]}"
+            printf "$current_color"
+            printf "%b\n" "$project_name"
+        fi
+        server_name=$(echo "$server_info" | awk '{print $1}')
+        server_ip=$(echo "$server_info" | awk '{print $2}')
+        printf "(%d)   %-20s %s\n" "$((i+1))" "$server_name" "$server_ip"
+    done
+    printf "$NO_COLOR"
+    echo "================================================"
+}
+
+#ssh
+ssh_connect() {
+        server_num=$((server_num-1))
+        if [[ -n "${server_list[server_num]}" ]]; then
+                read -r project server_name server_ip_port <<< "${server_list[server_num]}"
+                IFS=' ' read -r ip port <<< "${server_ip_port//:/ }"
+                echo "Connecting to $server_name at $ip on port ${port:-22}"
+                ssh -A -p "${port:-22}" "$ip"
+        else
+                echo "Invalid server number."
+        fi
+}
+# Display all servers categorized by project with respective colors
+if [[ -z $where ]]
+then
+    display_servers_by_project
+    read -p "Enter the server number to connect: " where
+    if [[ "$where" =~ ^[0-9]+$ ]]; then
+            server_num=$where
+            ssh_connect
+        elif [[ "$where" =~ ^[a-zA-Z]+$ ]]; then
+            index=1
+            where="${where^^}"
+            for server in "${server_list[@]}"; do
+                # Check if the element contains "UD"
+                if [[ "$server" == "$where"* ]]; then
+                    server_num=$index
+                    ssh_connect
+                    break # Exit the loop after the first match is found
+                fi
+                ((index++))
+            done
+        else
+            echo "Unable to recognize where you want to go!"
+        fi
+else
+    if [[ $where == "noc" ]]
+    then
+        ssh -i jenkins_id_rsa noc_jenkins@124.108.156.69
+    else
+        if [[ "$where" =~ ^[0-9]+$ ]]; then
+            server_num=$where
+            ssh_connect
+        elif [[ "$where" =~ ^[a-zA-Z]+$ ]]; then
+	    index=1
+	    where="${where^^}"
+            for server in "${server_list[@]}"; do
+                # Check if the element contains "UD"
+                if [[ "$server" == "$where"* ]]; then
+		    server_num=$index
+	  	    ssh_connect
+                    break # Exit the loop after the first match is found
+                fi
+		((index++))
+            done
+        else
+            echo "Unable to recognize where you want to go!"
+        fi
+    fi
+fi
