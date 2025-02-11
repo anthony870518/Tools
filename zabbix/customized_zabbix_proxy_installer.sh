@@ -53,12 +53,12 @@ sudo systemctl restart mysqld
 
 tmp_pwd=`cat /var/log/mysqld.log | grep "temporary password" | tail -1 | rev | cut -d" " -f1 | rev`
 echo $tmp_pwd
-sudo mysql -uroot -p"$tmp_pwd" -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'nocdbadmin'" --connect-expired-password
-sudo mysql -uroot -pnocdbadmin -e "create user 'zabbix_proxy'@localhost identified with caching_sha2_password by 'nocdbadmin';flush privileges;"
-sudo mysql -uroot -pnocdbadmin -e "create database ${ProxyTitle}_proxy_v602_10051 character set utf8;"
-sudo mysql -uroot -pnocdbadmin -e "create database ${ProxyTitle}_proxy_v602_10053 character set utf8;"
-sudo mysql -uroot -pnocdbadmin -e "grant all on ${ProxyTitle}_proxy_v602_10051.* to 'zabbix_proxy'@'localhost';"
-sudo mysql -uroot -pnocdbadmin -e "grant all on ${ProxyTitle}_proxy_v602_10053.* to 'zabbix_proxy'@'localhost';flush privileges;"
+sudo mysql -uroot -p"$tmp_pwd" -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'xxxxxxxxx'" --connect-expired-password
+sudo mysql -uroot -pxxxxxxxxxx -e "create user 'zabbix_proxy'@localhost identified with caching_sha2_password by 'xxxxxxxx';flush privileges;"
+sudo mysql -uroot -pxxxxxxxxxx -e "create database ${ProxyTitle}_proxy_v602_10051 character set utf8;"
+sudo mysql -uroot -pxxxxxxxxxx -e "create database ${ProxyTitle}_proxy_v602_10053 character set utf8;"
+sudo mysql -uroot -pxxxxxxxxxx -e "grant all on ${ProxyTitle}_proxy_v602_10051.* to 'zabbix_proxy'@'localhost';"
+sudo mysql -uroot -pxxxxxxxxxx -e "grant all on ${ProxyTitle}_proxy_v602_10053.* to 'zabbix_proxy'@'localhost';flush privileges;"
 
 
 #Install Zabbix
@@ -71,8 +71,8 @@ wget https://cdn.zabbix.com/zabbix/sources/stable/6.0/zabbix-6.0.2.tar.gz
 tar -zxvf zabbix-6.0.2.tar.gz -C /tmp/
 cd /tmp/zabbix-6.0.2/
 ./configure --prefix=/opt/zabbix_proxy_v602 --enable-agent --enable-proxy --with-mysql --enable-ipv6 --with-net-snmp --with-libcurl --with-libxml2;sudo make && sudo make install
-mysql -uroot -pnocdbadmin "$ProxyTitle"_proxy_v602_10051 < /tmp/zabbix-6.0.2/database/mysql/schema.sql
-mysql -uroot -pnocdbadmin "$ProxyTitle"_proxy_v602_10053 < /tmp/zabbix-6.0.2/database/mysql/schema.sql
+mysql -uroot -pxxxxxxx "$ProxyTitle"_proxy_v602_10051 < /tmp/zabbix-6.0.2/database/mysql/schema.sql
+mysql -uroot -pxxxxxxx "$ProxyTitle"_proxy_v602_10053 < /tmp/zabbix-6.0.2/database/mysql/schema.sql
 
 mkdir /opt/tools
 mkdir /opt/tools/zabbix_userparameter
@@ -103,7 +103,7 @@ sed -i "/^# PidFile=/c\PidFile=/tmp/"$ProxyTitle"_proxy_v602_10051.pid" $proxy51
 sed -i "/^# SocketDir=/c\SocketDir=/tmp/"$ProxyTitle"_proxy_v602_10051" $proxy51
 sed -i "/^DBName=/c\DBName="$ProxyTitle"_proxy_v602_10051" $proxy51
 sed -i "/^DBUser=/c\DBUser=zabbix_proxy" $proxy51
-sed -i "/^# DBPassword=/c\DBPassword=nocdbadmin" $proxy51
+sed -i "/^# DBPassword=/c\DBPassword=xxxxxxxxx" $proxy51
 sed -i "/^# DBSocket=/c\DBSocket=/data/mysql/mysql.sock" $proxy51
 sed -i "/^# ProxyLocalBuffer=/c\ProxyLocalBuffer=0" $proxy51
 sed -i "/^# ProxyOfflineBuffer=/c\ProxyOfflineBuffer=4" $proxy51
@@ -153,21 +153,21 @@ sed -i "/^# Include=/c\Include=/opt/tools/zabbix_userparameter/*.conf" $agent
 /opt/zabbix_proxy_v602/sbin/zabbix_agentd -c /opt/zabbix_proxy_v602/etc/zabbix_agentd.conf
 
 #Setting up partition
-mysql -uroot -pnocdbadmin ${ProxyTitle}_proxy_v602_10051 < /home/twnoc/noc_jenkins/partition.sql
-mysql -uroot -pnocdbadmin ${ProxyTitle}_proxy_v602_10053 < /home/twnoc/noc_jenkins/partition.sql
-mysql -uroot -pnocdbadmin ${ProxyTitle}_proxy_v602_10051 -e "ALTER TABLE \`proxy_history\` DROP PRIMARY KEY , ADD PRIMARY KEY ( \`id\`,\`clock\` );"
-mysql -uroot -pnocdbadmin ${ProxyTitle}_proxy_v602_10053 -e "ALTER TABLE \`proxy_history\` DROP PRIMARY KEY , ADD PRIMARY KEY ( \`id\`,\`clock\` );"
-mysql -uroot -pnocdbadmin ${ProxyTitle}_proxy_v602_10051 -e "CALL partition_maintenance_all('${ProxyTitle}_proxy_v602_10051')" >> /var/log/partition_10051.log
-mysql -uroot -pnocdbadmin ${ProxyTitle}_proxy_v602_10053 -e "CALL partition_maintenance_all('${ProxyTitle}_proxy_v602_10053')" >> /var/log/partition_10053.log
+mysql -uroot -pxxxxxxxxx ${ProxyTitle}_proxy_v602_10051 < /home/jenkins/partition.sql
+mysql -uroot -pxxxxxxxxx ${ProxyTitle}_proxy_v602_10053 < /home/jenkins/partition.sql
+mysql -uroot -pxxxxxxxxx ${ProxyTitle}_proxy_v602_10051 -e "ALTER TABLE \`proxy_history\` DROP PRIMARY KEY , ADD PRIMARY KEY ( \`id\`,\`clock\` );"
+mysql -uroot -pxxxxxxxxx ${ProxyTitle}_proxy_v602_10053 -e "ALTER TABLE \`proxy_history\` DROP PRIMARY KEY , ADD PRIMARY KEY ( \`id\`,\`clock\` );"
+mysql -uroot -pxxxxxxxxx ${ProxyTitle}_proxy_v602_10051 -e "CALL partition_maintenance_all('${ProxyTitle}_proxy_v602_10051')" >> /var/log/partition_10051.log
+mysql -uroot -pxxxxxxxxx ${ProxyTitle}_proxy_v602_10053 -e "CALL partition_maintenance_all('${ProxyTitle}_proxy_v602_10053')" >> /var/log/partition_10053.log
 
 sudo echo "" >> /etc/crontab
 sudo echo "#partition for zabbix proxy v602" >> /etc/crontab
-crontabinsert051="0 1 * * * root mysql -uroot -pnocdbadmin ${ProxyTitle}_proxy_v602_10051 -e \"CALL partition_maintenance_all('${ProxyTitle}_proxy_v602_10051')\" >> /var/log/partition_10051.log"
-crontabinsert053="15 1 * * * root mysql -uroot -pnocdbadmin ${ProxyTitle}_proxy_v602_10053 -e \"CALL partition_maintenance_all('${ProxyTitle}_proxy_v602_10053')\" >> /var/log/partition_10053.log"
+crontabinsert051="0 1 * * * root mysql -uroot -pxxxxxxxxx ${ProxyTitle}_proxy_v602_10051 -e \"CALL partition_maintenance_all('${ProxyTitle}_proxy_v602_10051')\" >> /var/log/partition_10051.log"
+crontabinsert053="15 1 * * * root mysql -uroot -pxxxxxxxx ${ProxyTitle}_proxy_v602_10053 -e \"CALL partition_maintenance_all('${ProxyTitle}_proxy_v602_10053')\" >> /var/log/partition_10053.log"
 
 #Prevent adding repetitive cronjobs during reinstallation (foolproof added 2024-11-26)
-sudo sed -i '/0 1 \* \* \* root mysql -uroot -pnocdbadmin.*-e "CALL partition_maintenance_all('\''.*_10051'\'')\" >> \/var\/log\/partition_10051.log/d' /etc/crontab
-sudo sed -i '/15 1 \* \* \* root mysql -uroot -pnocdbadmin.*-e "CALL partition_maintenance_all('\''.*_10053'\'')\" >> \/var\/log\/partition_10053.log/d' /etc/crontab
+sudo sed -i '/0 1 \* \* \* root mysql -uroot -pxxxxxxxx.*-e "CALL partition_maintenance_all('\''.*_10051'\'')\" >> \/var\/log\/partition_10051.log/d' /etc/crontab
+sudo sed -i '/15 1 \* \* \* root mysql -uroot -pxxxxxxxx.*-e "CALL partition_maintenance_all('\''.*_10053'\'')\" >> \/var\/log\/partition_10053.log/d' /etc/crontab
 
 sudo echo "$crontabinsert051" >> /etc/crontab
 sudo echo "$crontabinsert053" >> /etc/crontab

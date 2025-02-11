@@ -119,7 +119,7 @@ def lambda_handler(event, context):
             headersList = {
               "Accept": "*/*",
               "User-Agent": "Thunder Client (https://www.thunderclient.com)",
-              "Authorization": "Bearer eBzrYRvOj9B06xYePvZSUzZeh6vXmutXPg0SjJsGnMb" 
+              "Authorization": "Bearer xxxxxxxxxxxxxxxxxx" 
             } 
             lineconn.request("POST", f"/api/notify?message={encoded_message}", "", headersList)
             response = lineconn.getresponse()

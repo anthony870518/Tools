@@ -23,14 +23,14 @@ for i in "${!users[@]}"; do
     user="${users[$i]}"
     key="${keys[$i]}"
 
-    SSH="ssh -t -i /var/lib/jenkins/.ssh/id_rsa noc_jenkins@$IP -p $PORT"
+    SSH="ssh -t -i /var/lib/jenkins/.ssh/id_rsa jenkins@$IP -p $PORT"
     echo "Processing $user on $IP via port: $PORT"
 
     # 執行 SSH 命令
     $SSH << EOF
     user="$user"
     key="$key"
-    user_home="/home/twnoc/\$user"
+    user_home="/home/\$user"
     ssh_dir="\$user_home/.ssh"
     authorized_keys="\$ssh_dir/authorized_keys"
 
@@ -38,7 +38,7 @@ for i in "${!users[@]}"; do
         sudo mkdir -p "\$ssh_dir"
         sudo truncate -s 0 "\$authorized_keys"
         echo -e "\$key" | sudo tee "\$authorized_keys" > /dev/null
-        sudo chown -R "\$user:twnoc" "\$user_home"
+        sudo chown -R "\$user:usergroup" "\$user_home"
         sudo chmod 700 "\$ssh_dir"
         sudo chmod 600 "\$authorized_keys"
     }
@@ -48,7 +48,7 @@ for i in "${!users[@]}"; do
         add_or_replace_key
     else
         echo "User \$user does not exist for host \$IP. Creating user and setting up SSH key."
-        sudo useradd "\$user" -md "\$user_home" -s /bin/bash -g twnoc
+        sudo useradd "\$user" -md "\$user_home" -s /bin/bash -g usergroup
         add_or_replace_key
         sudo cp /etc/skel/.bash* "\$user_home/"
     fi

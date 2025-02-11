@@ -14,10 +14,10 @@ send_seatalk() {
     local message="$1"
     local json_msg=$(jq -nc \
         --arg msg "$message" \
-        --arg gid "NTY0ODEyNzM3ODk5" \
+        --arg gid "xxxxxxxx" \
         '{message: $msg, group_id: $gid}')
 
-    curl -s -X POST "http://10.59.74.107:8520/seatalk/send" \
+    curl -s -X POST "http://xxx.xxx.xxx.xxx:xxxxx/seatalk/send" \
          -H "Content-Type: application/json" \
          -d "$json_msg"
 }
